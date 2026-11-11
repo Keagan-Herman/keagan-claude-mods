@@ -1,0 +1,6 @@
+{
+  "name": "deploy-diff",
+  "version": "0.1.0",
+  "description": "After a git commit, shows a card under the commit row listing what needs deploying, which migrations to apply and which new scripts to run.",
+  "types": "./types/index.d.ts"
+}

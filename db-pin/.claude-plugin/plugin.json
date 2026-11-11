@@ -1,0 +1,6 @@
+{
+  "name": "db-pin",
+  "version": "0.1.0",
+  "description": "Pins each repo and branch to one Supabase project, blocks writes aimed anywhere else, and shows the pin and the last migration applied.",
+  "types": "./types/index.d.ts"
+}

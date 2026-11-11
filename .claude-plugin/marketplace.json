@@ -1,0 +1,11 @@
+{
+  "name": "keagan-claude-mods",
+  "owner": { "name": "Keagan-Herman" },
+  "plugins": [
+    { "name": "git-guard", "source": "./git-guard" },
+    { "name": "db-pin", "source": "./db-pin" },
+    { "name": "deploy-diff", "source": "./deploy-diff" },
+    { "name": "phase-stepper", "source": "./phase-stepper" },
+    { "name": "downloads-lookup", "source": "./downloads-lookup" }
+  ]
+}

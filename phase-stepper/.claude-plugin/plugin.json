@@ -1,0 +1,5 @@
+{
+  "name": "phase-stepper",
+  "version": "0.1.0",
+  "description": "After a turn that finishes a phase or batch, suggests the next prompt in the empty prompt box (Tab to take it), with the local commit step when files are uncommitted."
+}

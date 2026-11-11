@@ -1,0 +1,6 @@
+{
+  "name": "git-guard",
+  "version": "0.1.0",
+  "description": "Blocks git push unless the prompt asked for it, switches GitHub accounts from a dropdown, and shows branch state in the status line.",
+  "types": "./types/index.d.ts"
+}

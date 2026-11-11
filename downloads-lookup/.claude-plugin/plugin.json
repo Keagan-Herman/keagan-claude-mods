@@ -1,0 +1,5 @@
+{
+  "name": "downloads-lookup",
+  "version": "0.1.0",
+  "description": "When a prompt mentions the Downloads folder, finds the files and folders there whose names match the prompt and hands Claude their paths, so it does not have to search."
+}
