@@ -73,3 +73,22 @@ export const statusText = (
     isPushOk ? 'push ON' : 'push off',
     active ?? 'no gh account',
   ].join(' · ')
+
+// A round badge with the account's initial, its colour fixed by the login so each account looks the same every time.
+const HUES = ['#7DD3FC', '#C4B5FD', '#6EE7A8', '#FDBA74', '#F9A8D4', '#FDE047']
+
+export const hueOf = (login: string): string =>
+  HUES[[...login].reduce((n, c) => n + c.charCodeAt(0), 0) % HUES.length] ?? HUES[0]!
+
+export const badge = (login: string, isActive: boolean): string => {
+  const hue = hueOf(login)
+  const letter = (login.match(/[a-z0-9]/i)?.[0] ?? '?').toUpperCase()
+
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">` +
+    `<circle cx="14" cy="14" r="13" fill="${hue}" opacity="${isActive ? 1 : 0.35}"/>` +
+    (isActive ? `<circle cx="14" cy="14" r="13" fill="none" stroke="#fff" stroke-width="1.5"/>` : '') +
+    `<text x="14" y="19" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="700" fill="#111">${letter}</text>` +
+    `</svg>`
+  )
+}

@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { CYAN, LABELS, YELLOW, agentRows, bar, describeCall, fmtDuration, fmtTokens, hitRate, levelColor, resetsIn, topTools } from './dash'
+import { CYAN, LABELS, RED, YELLOW, agentRows, bar, meter, describeCall, fmtDuration, fmtTokens, hitRate, levelColor, resetsIn, topTools } from './dash'
 import { PETS, assignPets, petFrame } from './pets'
 
 const isOpen = atom({ plugin: 'dashboard', key: 'isOpen' } as const, false)
@@ -174,7 +174,16 @@ export const register: Register = on => {
       return next(e)
     }
 
-    const { Box, Button, Text } = $.ui.resolve(e)
+    const els = $.ui.resolve(e)
+    const { Box, Button, Text } = els
+    const Svg = 'Svg' in els ? els.Svg : undefined
+    const chip = (text: string, color = '#E2E8F0', bg = '#1E293B') => (
+      <Text color={color} backgroundColor={bg}>{` ${text} `}</Text>
+    )
+    const gauge = (percent: number) =>
+      Svg ? <Svg source={meter(percent)} alt={`${Math.round(percent)}%`} /> : <Text color={levelColor(percent)}>{bar(percent)}</Text>
+    // Keep whatever other mods draw here (git-guard's band, say) and add the dashboard above it.
+    const below = await next(e)
     const open = await read($, isOpen)
     const flip = async () => {
       await update($, isOpen, () => !open)
@@ -203,9 +212,12 @@ export const register: Register = on => {
       ].filter(Boolean)
 
       return (
-        <Box>
-          <Text dimColor>{bits.length > 0 ? `${bits.join(' | ')}  ` : ''}</Text>
-          {toggle}
+        <Box flexDirection="column">
+          <Box>
+            {bits.map(b => [chip(b), <Text> </Text>])}
+            {toggle}
+          </Box>
+          {below}
         </Box>
       )
     }
@@ -217,20 +229,31 @@ export const register: Register = on => {
     const where = await read($, git)
     const total = await read($, cost)
     const main = (await read($, activity)).main
+    // The frame takes the colour of whichever gauge is fullest.
+    const worst = Math.max(ctx?.percent ?? 0, ...lims.map(l => l.percentUsed))
     const row = (label: string, ...parts: JSX.Element[]) => (
       <Box>
-        <Text dimColor>{label.padEnd(8)}</Text>
+        <Text color="#64748B" bold>{label.padEnd(9)}</Text>
         {parts}
       </Box>
     )
 
     return (
-      <Box flexDirection="column" borderStyle="round" paddingX={1}>
+      <Box flexDirection="column">
+      <Box flexDirection="column" borderStyle="round" borderColor={levelColor(worst)} paddingX={1}>
         <Box>
-          <Text bold color={CYAN}>DASHBOARD</Text>
-          <Text dimColor>{`  up ${fmtDuration(now - s.startedAt)} | ${s.turns} turns | ${s.tools} tools | ${s.errors} errors  `}</Text>
+          <Text bold color={CYAN}>{'◆ DASHBOARD  '}</Text>
+          {chip(`up ${fmtDuration(now - s.startedAt)}`)}
+          <Text> </Text>
+          {chip(`${s.turns} turns`)}
+          <Text> </Text>
+          {chip(`${s.tools} tools`)}
+          <Text> </Text>
+          {s.errors > 0 ? chip(`${s.errors} errors`, '#111', RED) : chip('0 errors')}
+          <Text>{'  '}</Text>
           {toggle}
         </Box>
+        <Text> </Text>
 
         {row(
           'AGENTS',
@@ -257,7 +280,7 @@ export const register: Register = on => {
         {ctx
           ? row(
               'CONTEXT',
-              <Text color={levelColor(ctx.percent)}>{bar(ctx.percent)}</Text>,
+              gauge(ctx.percent),
               <Text>{` ${Math.round(ctx.percent)}%  ${fmtTokens(ctx.tokens)} of ${fmtTokens(ctx.window)}`}</Text>,
             )
           : row('CONTEXT', <Text dimColor>not measured yet</Text>)}
@@ -265,7 +288,7 @@ export const register: Register = on => {
           ? lims.map(l =>
               row(
                 (LABELS[l.kind] ?? l.kind).toUpperCase(),
-                <Text color={levelColor(l.percentUsed)}>{bar(l.percentUsed)}</Text>,
+                gauge(l.percentUsed),
                 <Text>{` ${Math.round(l.percentUsed)}%`}</Text>,
                 <Text dimColor>{resetsIn(l.resetsAt, now) ? `  resets in ${resetsIn(l.resetsAt, now)}` : ''}</Text>,
               ),
@@ -281,6 +304,8 @@ export const register: Register = on => {
           <Text>{where ? `${where.branch} | ${where.dirty} uncommitted` : 'no repository'}</Text>,
           <Text dimColor>{topTools(s.top) ? `  top tools: ${topTools(s.top)}` : ''}</Text>,
         )}
+      </Box>
+      {below}
       </Box>
     )
   })

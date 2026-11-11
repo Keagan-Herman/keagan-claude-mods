@@ -15,6 +15,7 @@ declare module 'claude-code' {
       git: GitGuardGit | null
       accounts: GitGuardAccount[]
       isPushOk: boolean
+      isDocked: boolean
     }
   }
 }

@@ -113,3 +113,18 @@ export const topTools = (counts: Record<string, number>, n = 3): string =>
     .join(', ')
 
 export const LABELS: Record<string, string> = { five_hour: '5h', seven_day: '7d', spend_limit: 'spend' }
+
+// A rounded meter for surfaces that draw SVG: the track, the fill in its level colour, a soft glow.
+export const meter = (percent: number, width = 140): string => {
+  const p = Math.max(0, Math.min(100, percent))
+  const fill = Math.max(p > 0 ? 6 : 0, Math.round((p / 100) * width))
+  const color = levelColor(p)
+
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="10" viewBox="0 0 ${width} 10">` +
+    `<rect y="2" width="${width}" height="6" rx="3" fill="#94A3B8" opacity=".18"/>` +
+    `<rect y="1" width="${fill}" height="8" rx="4" fill="${color}" opacity=".25"/>` +
+    `<rect y="2" width="${fill}" height="6" rx="3" fill="${color}"/>` +
+    `</svg>`
+  )
+}

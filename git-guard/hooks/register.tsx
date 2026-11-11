@@ -1,11 +1,26 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { gitVerb, parseAccounts, parseStatus, statusText, wantsPush } from './git'
+import { badge, gitVerb, hueOf, parseAccounts, parseStatus, statusText, wantsPush } from './git'
 
 const git = atom({ plugin: 'git-guard', key: 'git' } as const, null)
 const accounts = atom({ plugin: 'git-guard', key: 'accounts' } as const, [])
 const isPushOk = atom({ plugin: 'git-guard', key: 'isPushOk' } as const, false)
+// Whether the side panel is drawn; when it is not, the band keeps one button to open it.
+const isDocked = atom({ plugin: 'git-guard', key: 'isDocked' } as const, false)
+
+const GREEN = '#6EE7A8'
+const RED = '#FF6B6B'
+const PANE = 'github'
+
+const openPane = async ($: EngineInterface) => {
+  const opened = await $.ui.open({ id: PANE, title: 'GitHub' })
+
+  await update($, isDocked, () => opened.isPlaced)
+
+  return opened
+}
+
 
 const run = async ($: EngineInterface, argv: string[]) => {
   try {
@@ -71,6 +86,20 @@ const switchTo = async ($: EngineInterface, login: string) => {
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await refreshAll($)
+    await $.command.register({ name: 'gh', description: 'Open the GitHub panel: switch account, allow a push' })
+    await openPane($)
+
+    return next(e)
+  })
+
+  on('command.run', { command: 'gh' }, async $ => {
+    const opened = await openPane($)
+
+    return { text: opened.isPlaced ? 'GitHub panel open.' : `The GitHub panel could not be placed: ${opened.reason}` }
+  })
+
+  on('ui.close', { id: PANE }, async ($, e, next) => {
+    await update($, isDocked, () => false)
 
     return next(e)
   })
@@ -133,37 +162,66 @@ export const register: Register = on => {
   // The model is never asked to add its own author line to commits or PRs.
   on('attribution.text', { kind: ['commit', 'pr'] }, () => ({ text: '' }))
 
+  // The band keeps only a way back to the panel, and only while the panel is not drawn.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const g = await read($, git)
-
-    if (e.props.hasSurvey || g === null) {
+    if (e.props.hasSurvey || (await read($, git)) === null || (await read($, isDocked))) {
       return next(e)
     }
 
+    const { Box, Button } = $.ui.resolve(e)
+    const active = (await read($, accounts)).find(a => a.isActive)?.login
+
+    return (
+      <Box flexDirection="column">
+        {await next(e)}
+        <Box>
+          <Button key="gh-open" label={`GitHub: ${active ?? 'no account'}`} onPress={() => openPane($).then(() => undefined)} />
+        </Box>
+      </Box>
+    )
+  })
+
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    const els = $.ui.resolve(e)
+    const { Box, Button, Text } = els
+    const Svg = 'Svg' in els ? els.Svg : undefined
+    const g = await read($, git)
     const list = await read($, accounts)
     const ok = await read($, isPushOk)
-    const active = list.find(a => a.isActive)?.login
-    const { Box, Button, Select } = $.ui.resolve(e)
-    const toggle = (
-      <Button
-        key="push"
-        label={ok ? 'Push allowed (this turn)' : 'Allow push'}
-        onPress={() => update($, isPushOk, () => !ok).then(() => showStatus($))}
-      />
-    )
 
-    return list.length === 0 ? (
-      <Box>{toggle}</Box>
-    ) : (
-      <Box>
-        <Select
-          key="account"
-          label="gh"
-          options={list.map(a => ({ value: a.login }))}
-          value={active}
-          onSelect={login => void switchTo($, login)}
-        />
-        {toggle}
+    return (
+      <Box flexDirection="column" paddingX={1}>
+        <Text bold>ACCOUNTS</Text>
+        {list.length === 0 ? <Text dimColor>gh is not signed in</Text> : null}
+        {list.map(a => (
+          <Box borderStyle="round" borderColor={a.isActive ? hueOf(a.login) : 'gray'} paddingX={1}>
+            {Svg ? <Svg source={badge(a.login, a.isActive)} alt={a.login} /> : <Text color={hueOf(a.login)}>{a.isActive ? '●' : '○'}</Text>}
+            <Text bold={a.isActive} color={a.isActive ? hueOf(a.login) : undefined}>{` ${a.login}  `}</Text>
+            {a.isActive ? (
+              <Text color="#111" backgroundColor={hueOf(a.login)} bold>{' ACTIVE '}</Text>
+            ) : (
+              <Button key={`use-${a.login}`} label="Switch" onPress={() => switchTo($, a.login)} />
+            )}
+          </Box>
+        ))}
+
+        <Text> </Text>
+        <Text bold>PUSH</Text>
+        <Box borderStyle="round" borderColor={ok ? GREEN : RED} paddingX={1}>
+          <Text color="#111" backgroundColor={ok ? GREEN : RED} bold>{ok ? ' ARMED ' : ' LOCKED '}</Text>
+          <Text dimColor>{ok ? '  this turn may push  ' : '  pushes are blocked  '}</Text>
+          <Button key="push" label={ok ? 'Lock' : 'Allow push'} onPress={() => update($, isPushOk, () => !ok).then(() => showStatus($))} />
+        </Box>
+
+        {g ? (
+          <Box flexDirection="column">
+            <Text> </Text>
+            <Text bold>REPO</Text>
+            <Text>{`⎇ ${g.branch}`}</Text>
+            <Text color={g.dirty > 0 ? '#FFD166' : undefined} dimColor={g.dirty === 0}>{`${g.dirty} uncommitted`}</Text>
+            <Text dimColor>{g.hasUpstream ? `${g.ahead} ahead, ${g.behind} behind` : 'no upstream'}</Text>
+          </Box>
+        ) : null}
       </Box>
     )
   })

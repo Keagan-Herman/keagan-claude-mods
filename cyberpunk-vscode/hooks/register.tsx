@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { CYAN, DIM, MAGENTA, YELLOW, fmtMs, fmtTokens, isFlavourWord, netWord, stripes, tagOf } from './neon'
+import { CYAN, DIM, INK, MAGENTA, YELLOW, banner, fmtMs, fmtTokens, isFlavourWord, netWord, tagOf } from './neon'
 
 const isOn = atom({ plugin: 'cyberpunk-vscode', key: 'isOn' } as const, true)
 const hud = atom({ plugin: 'cyberpunk-vscode', key: 'hud' } as const, null)
@@ -80,9 +80,10 @@ export const register: Register = on => {
 
     return (
       <Box>
-        <Text color={tag.color} bold>
+        <Text color={INK} backgroundColor={tag.color} bold>
           {tag.text}
         </Text>
+        <Text> </Text>
         {await next(e)}
       </Box>
     )
@@ -97,13 +98,23 @@ export const register: Register = on => {
     const lit = await read($, isOn)
     const now = await read($, hud)
     const flip = () => update($, isOn, () => !lit).then(() => $.store.set('isOn', !lit))
+    const readout = !lit
+      ? 'link severed'
+      : now
+        ? `${now.branch} | ${now.dirty} dirty | ${now.turns} runs${now.turns > 0 ? ` | ${fmtMs(now.lastMs)}` : ''}`
+        : 'syncing'
 
     return (
-      <Box>
-        <Svg source={stripes(36, 14)} alt="hazard stripes" />
-        <Text color={lit ? CYAN : DIM} bold>{lit ? ' NET//ONLINE ' : ' NET//OFFLINE '}</Text>
-        {lit && now ? <Text color={DIM}>{`${now.branch} | ${now.dirty} dirty | `}</Text> : <Text> </Text>}
-        <Button key="net" label={lit ? 'Disengage' : 'Engage'} onPress={flip} />
+      <Box flexDirection="column">
+        <Box flexDirection="column" borderStyle="single" borderColor={lit ? MAGENTA : DIM} backgroundColor={INK} paddingX={1}>
+          <Svg source={banner(lit, readout)} alt={`${lit ? 'NET//ONLINE' : 'NET//OFFLINE'}: ${readout}`} />
+          <Box>
+            <Text color={lit ? CYAN : DIM} bold>{lit ? 'NET//ONLINE ' : 'NET//OFFLINE '}</Text>
+            <Text color={DIM}>{lit ? '// signal clean  ' : '// standing by  '}</Text>
+            <Button key="net" label={lit ? 'Disengage' : 'Engage'} onPress={flip} />
+          </Box>
+        </Box>
+        {await next(e)}
       </Box>
     )
   })
