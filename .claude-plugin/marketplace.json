@@ -8,6 +8,7 @@
     { "name": "phase-stepper", "source": "./phase-stepper" },
     { "name": "downloads-lookup", "source": "./downloads-lookup" },
     { "name": "dashboard", "source": "./dashboard" },
+    { "name": "model-router", "source": "./model-router" },
     { "name": "cosmos-terminal", "source": "./cosmos-terminal" },
     { "name": "cyberpunk-vscode", "source": "./cyberpunk-vscode" },
     { "name": "anime-desktop", "source": "./anime-desktop" }

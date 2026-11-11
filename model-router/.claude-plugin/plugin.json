@@ -1,0 +1,6 @@
+{
+  "name": "model-router",
+  "version": "0.1.0",
+  "description": "Matches work to a model. Subagents are sent to Haiku, Sonnet or Opus by what the task is, with a toast saying which. A band above the prompt advises when your own prompt looks lighter or heavier than the model you are on. Rules first, so it costs no tokens; one small Haiku call only when the rules cannot tell.",
+  "types": "./types/index.d.ts"
+}
