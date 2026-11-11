@@ -29,6 +29,7 @@ In the desktop app, where `/plugin` does not run: click + next to the prompt box
 | `deploy-diff` | After a `git commit`, a card under the commit row lists what needs deploying: the `firebase deploy --only ...` command for the changed targets, new Supabase migrations to apply by hand, and new scripts to run. Knows Firebase and Supabase projects only. |
 | `phase-stepper` | After a turn that finishes a phase or batch, suggests the next prompt in the empty box (Tab to take it), with a local-commit step when files are uncommitted. |
 | `downloads-lookup` | When a prompt mentions your Downloads folder, finds files and folders whose names match the prompt and gives the model their paths so it does not search. It attaches paths only and never reads file contents. |
+| `dashboard` | For the terminal and the VS Code extension. A **Dashboard** button (or `/dash`) opens a panel above the prompt and **Hide dashboard** closes it. It shows the agents that are working (type, task, what each last did, how long), what the main loop last did, context fill, the 5-hour and 7-day rate-limit windows with reset times, the last turn's time, output tokens and cache hit rate, the session cost, tool and error counts, your most used tools, and the git branch with uncommitted files. Closed, it shows one line of the numbers that matter. On a short window it falls back to that line. |
 
 ## Look-and-feel mods
 
@@ -47,7 +48,8 @@ Honest notes on how far each has been checked.
 - Every mod has tests, type-checks and validates. The tests check that what a mod draws is valid on each surface. They cannot show how it looks.
 - **Not yet seen on a real screen:** the three look-and-feel mods. Colours, spacing, the animation's smoothness and whether the VS Code extension can dock the `/netrun` panel are all unconfirmed.
 - **`anime-desktop`'s backdrop is untested.** The Claude Code command-line tool used to validate and test mods (2.1.314) predates the backdrop API, so it could not check it. If the backdrop does not appear, update Claude Code first. The rest of the mod does not depend on it.
-- Token use: the look-and-feel mods and `deploy-diff` and `phase-stepper` draw on screen only and add no tokens. `downloads-lookup` adds a few lines of file paths to a prompt that mentions Downloads, and a blocked push or database call sends the model one short message.
+- `dashboard` has not been seen on a real screen either. Its rate-limit rows appear only where the engine reports them (subscription accounts), and its cost figure only where the host keeps a ledger.
+- Token use: the look-and-feel mods, `dashboard`, `deploy-diff` and `phase-stepper` draw on screen only and add no tokens. The dashboard reads events and local data the engine already produces. `downloads-lookup` adds a few lines of file paths to a prompt that mentions Downloads, and a blocked push or database call sends the model one short message.
 
 ## After installing: setup and making them yours
 

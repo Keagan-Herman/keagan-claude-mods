@@ -1,0 +1,6 @@
+{
+  "name": "dashboard",
+  "version": "0.1.0",
+  "description": "A toggleable dashboard above the prompt for the terminal and the VS Code extension: running agents and what each is doing, context and rate-limit usage, session cost, cache hit rate, tool counts and git state. Local data only, it uses no tokens.",
+  "types": "./types/index.d.ts"
+}
