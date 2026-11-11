@@ -1,0 +1,21 @@
+{
+  "name": "anime-desktop",
+  "version": "0.1.0",
+  "description": "A shonen-flavoured look for the Claude desktop app: a frosted-glass backdrop (original speed-line, aura and stadium scenes, or your own image), marked tool rows, a power-level band and a /dojo panel.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "scene": {
+      "type": "string",
+      "title": "Backdrop scene",
+      "description": "The built-in backdrop: burst (speed lines and a gold aura), aura (green spirit energy) or stadium (night court and floodlights).",
+      "default": "burst",
+      "options": ["burst", "aura", "stadium"]
+    },
+    "backdropImage": {
+      "type": "string",
+      "title": "Your own backdrop image",
+      "description": "Optional absolute path to a .jpg, .png or .webp you own the right to use, at most about 95 KB (the backdrop is an SVG capped near 128 KB). Leave empty for the built-in scene.",
+      "default": ""
+    }
+  }
+}

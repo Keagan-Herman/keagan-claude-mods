@@ -1,0 +1,6 @@
+{
+  "name": "cyberpunk-vscode",
+  "version": "0.1.0",
+  "description": "A neon cyberpunk HUD look for the Claude Code VS Code extension: tagged tool rows, hacker spinner words, a striped status band and a /netrun readout panel.",
+  "types": "./types/index.d.ts"
+}

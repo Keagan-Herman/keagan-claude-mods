@@ -1,0 +1,6 @@
+{
+  "name": "cosmos-terminal",
+  "version": "0.1.0",
+  "description": "A space look for the Claude Code terminal: an animated strip above the prompt (sun, orbiting planets, twinkling stars, a black hole, comets), a planet colour per tool row and orbital spinner words, with a Lights off/on toggle.",
+  "types": "./types/index.d.ts"
+}

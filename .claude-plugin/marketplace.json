@@ -6,6 +6,9 @@
     { "name": "db-pin", "source": "./db-pin" },
     { "name": "deploy-diff", "source": "./deploy-diff" },
     { "name": "phase-stepper", "source": "./phase-stepper" },
-    { "name": "downloads-lookup", "source": "./downloads-lookup" }
+    { "name": "downloads-lookup", "source": "./downloads-lookup" },
+    { "name": "cosmos-terminal", "source": "./cosmos-terminal" },
+    { "name": "cyberpunk-vscode", "source": "./cyberpunk-vscode" },
+    { "name": "anime-desktop", "source": "./anime-desktop" }
   ]
 }
