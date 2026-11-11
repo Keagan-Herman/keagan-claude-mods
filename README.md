@@ -79,6 +79,10 @@ In Claude Code settings, set the mod's `backdropImage` option to the absolute pa
 
 Copy the repo, change the files, then run `claude plugin validate <mod>` and `claude plugin test <mod>`. Load your copy without installing by starting a session with `claude --plugin-dir <path-to-mod>`.
 
+## Contributing
+
+`CLAUDE.md` in this repo lists the habits for changing it: update this README in the same commit as any change, run the secrets scan and check for personal details before committing, add each new mod to `.claude-plugin/marketplace.json` and the tables above, and validate and test every mod you touch. Claude Code reads that file automatically when a session starts in this folder.
+
 ## Checks
 
 Each mod has a small test file. Run `claude plugin test <mod>` and `claude plugin validate <mod>` inside the folder.
