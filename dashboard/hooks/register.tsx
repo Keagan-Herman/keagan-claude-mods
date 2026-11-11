@@ -1,7 +1,8 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { CYAN, GREEN, LABELS, YELLOW, agentRows, bar, describeCall, fmtDuration, fmtTokens, hitRate, levelColor, resetsIn, topTools } from './dash'
+import { CYAN, LABELS, YELLOW, agentRows, bar, describeCall, fmtDuration, fmtTokens, hitRate, levelColor, resetsIn, topTools } from './dash'
+import { PETS, assignPets, petFrame } from './pets'
 
 const isOpen = atom({ plugin: 'dashboard', key: 'isOpen' } as const, false)
 const agents = atom({ plugin: 'dashboard', key: 'agents' } as const, [])
@@ -13,9 +14,13 @@ const cost = atom({ plugin: 'dashboard', key: 'cost' } as const, null)
 const turn = atom({ plugin: 'dashboard', key: 'turn' } as const, null)
 const stats = atom({ plugin: 'dashboard', key: 'stats' } as const, { startedAt: 0, turns: 0, tools: 0, errors: 0, top: {} })
 const git = atom({ plugin: 'dashboard', key: 'git' } as const, null)
+const pets = atom({ plugin: 'dashboard', key: 'pets' } as const, {})
+const tick = atom({ plugin: 'dashboard', key: 'tick' } as const, 0)
 
 const SURFACES = new Set(['terminal', 'vscode'])
-const REFRESH_MS = 2000
+const TICK_MS = 500
+const REFRESH_EVERY = 4 // ticks between agent list refreshes: about 2 seconds
+const WORKING = new Set(['running', 'waiting', 'pending'])
 
 const refreshAgents = async ($: EngineInterface) => {
   try {
@@ -23,6 +28,14 @@ const refreshAgents = async ($: EngineInterface) => {
 
     await update($, agents, () =>
       list.map(a => ({ id: a.id, type: a.type, description: a.description, status: a.status, ...(a.name ? { name: a.name } : {}) })),
+    )
+    // A new agent takes a pet no working agent has; it keeps it until the agent is gone.
+    await update($, pets, known =>
+      assignPets(
+        list.filter(a => WORKING.has(a.status)).map(a => a.id),
+        known,
+        list.map(a => a.id),
+      ),
     )
   } catch {
     // No agent list on this build: the section just stays empty.
@@ -54,11 +67,24 @@ export const register: Register = on => {
     await $.command.register({ name: 'dash', description: 'Show or hide the dashboard above the prompt' })
     await refreshGit($)
 
-    // While the dashboard is open, keep the agent list and the elapsed times fresh.
-    $.clock.every(REFRESH_MS, async () => {
-      if (await read($, isOpen)) {
+    // While the dashboard is open: a tick every half second animates the pets, and every
+    // fourth one refreshes the agent list. The tick is state only the dashboard reads, so
+    // each one redraws the dashboard and nothing else. Closed, or with nobody working, it idles.
+    let beats = 0
+
+    $.clock.every(TICK_MS, async () => {
+      if (!(await read($, isOpen))) {
+        return
+      }
+
+      beats += 1
+
+      if (beats % REFRESH_EVERY === 0) {
         await refreshAgents($)
-        $.ui.invalidate('ui.render')
+      }
+
+      if ((await read($, agents)).some(a => WORKING.has(a.status))) {
+        await update($, tick, t => t + 1)
       }
     })
 
@@ -150,7 +176,14 @@ export const register: Register = on => {
 
     const { Box, Button, Text } = $.ui.resolve(e)
     const open = await read($, isOpen)
-    const flip = () => update($, isOpen, () => !open).then(() => $.store.set('isOpen', !open))
+    const flip = async () => {
+      await update($, isOpen, () => !open)
+      await $.store.set('isOpen', !open)
+
+      if (!open) {
+        await refreshAgents($)
+      }
+    }
     const toggle = <Button key="dash" label={open ? 'Hide dashboard' : 'Dashboard'} onPress={flip} />
 
     const now = await $.clock.now()
@@ -178,6 +211,8 @@ export const register: Register = on => {
     }
 
     const s = await read($, stats)
+    const beat = await read($, tick)
+    const petOf = await read($, pets)
     const last = await read($, turn)
     const where = await read($, git)
     const total = await read($, cost)
@@ -203,14 +238,18 @@ export const register: Register = on => {
           <Text dimColor>{working.more > 0 ? `  +${working.more} more` : ''}</Text>,
           <Text dimColor>{working.finished > 0 ? `  ${working.finished} finished` : ''}</Text>,
         )}
-        {working.rows.map(r => (
-          <Box>
-            <Text dimColor>{'  '}</Text>
-            <Text color={YELLOW}>{r.label.padEnd(15)}</Text>
-            <Text>{`${r.task} `}</Text>
-            <Text dimColor>{`> ${r.doing} (${r.elapsed})`}</Text>
-          </Box>
-        ))}
+        {working.rows.map(r => {
+          const pet = PETS[petOf[r.id] ?? 0] ?? PETS[0]!
+
+          return (
+            <Box>
+              <Text color={pet.color}>{petFrame(pet, r.isAsleep, beat)}</Text>
+              <Text color={pet.color} bold>{r.label.padEnd(15)}</Text>
+              <Text>{`${r.task} `}</Text>
+              <Text dimColor>{`> ${r.doing} (${r.elapsed})`}</Text>
+            </Box>
+          )
+        })}
         {main && now - main.at < 120_000
           ? row('MAIN', <Text>{`${main.tool}${main.detail ? ` ${main.detail}` : ''}`}</Text>, <Text dimColor>{`  ${fmtDuration(now - main.at)} ago`}</Text>)
           : null}

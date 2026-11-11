@@ -33,6 +33,9 @@ test('only working agents show, oldest first, with what they last did', () => {
 
   expect(out.rows.map(r => r.label)).toEqual(['tester', 'Explore'])
   expect(out.rows[0]?.doing).toBe('waiting')
+  expect(out.rows[0]?.isAsleep).toBe(true)
+  expect(out.rows[1]?.isAsleep).toBe(false)
+  expect(out.rows[1]?.id).toBe('b')
   expect(out.rows[1]?.doing).toBe('Grep useAuth')
   expect(out.rows[1]?.elapsed).toBe('1m 1s')
   expect(out.finished).toBe(1)

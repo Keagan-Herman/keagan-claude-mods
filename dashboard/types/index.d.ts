@@ -37,6 +37,10 @@ declare module 'claude-code' {
       turn: DashTurn | null
       stats: DashStats
       git: { branch: string; dirty: number } | null
+      // Which pet (an index into the pet list) each agent has.
+      pets: Record<string, number>
+      // Counts about every half second while agents work; only the dashboard reads it.
+      tick: number
     }
   }
 }

@@ -66,7 +66,7 @@ export const describeCall = (tool: string, input: Record<string, unknown>): { to
 
 const ACTIVE = new Set(['running', 'waiting', 'pending'])
 
-export type AgentRow = { label: string; task: string; doing: string; elapsed: string }
+export type AgentRow = { id: string; isAsleep: boolean; label: string; task: string; doing: string; elapsed: string }
 
 // The agents still working, oldest first, with what each last did and for how long.
 export const agentRows = (
@@ -82,6 +82,8 @@ export const agentRows = (
     const last = activity[a.id]
 
     return {
+      id: a.id,
+      isAsleep: a.status !== 'running',
       label: clip(a.name ?? a.type, 14),
       task: clip(a.description, 30),
       doing: last ? `${last.tool}${last.detail ? ` ${last.detail}` : ''}` : a.status,

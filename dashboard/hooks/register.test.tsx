@@ -53,3 +53,24 @@ test('a short window falls back to the one-line summary, and other surfaces are 
   expect(await desktop.find({ key: 'dash' })).toBeUndefined()
   await desktop.unmount()
 })
+
+test('a working agent shows up with its own pet', async ($, on) => {
+  mock.clock(on)
+  mock.store(on)
+  on('agent.list', () => ({
+    value: [
+      { id: 'a1', type: 'Explore', description: 'map the auth code', status: 'running' },
+      { id: 'a2', type: 'Plan', description: 'draft the steps', status: 'waiting' },
+    ],
+  }))
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await ui.press({ key: 'dash' })
+
+  expect(await ui.find({ type: 'Text', text: /Explore/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /map the auth code/ })).toBeDefined()
+  // The first agent has the crab, working; the second the owl, asleep.
+  expect(await ui.find({ type: 'Text', text: /\(oo\)/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /\{-,-\}/ })).toBeDefined()
+  await ui.unmount()
+})
