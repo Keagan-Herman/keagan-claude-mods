@@ -47,6 +47,21 @@ Each restyles one surface and passes everything else straight through, so instal
 | `cyberpunk-vscode` | VS Code extension | A solid coloured chip in front of each tool row (yellow, cyan LIVE while running, magenta ERR on error), hacker-style spinner words, a bordered neon panel above the prompt with an animated banner (hazard stripes, scanlines, glitching NET//ONLINE title, pulsing light, branch and run readout) and **Engage** / **Disengage**, and `/netrun`, which tries to open a small readout panel (branch, uncommitted files, turns, last turn). If the extension cannot dock a panel it says so, and the band carries the readout. |
 | `anime-desktop` | Desktop app | A frosted-glass backdrop with three original scenes (`burst`, `aura`, `stadium`) or your own image, a marked tool row, a "power level" band (output tokens this session, with a rank), `/dojo` for a panel with the same numbers, and `/anime` to turn the backdrop on or off. The backdrop needs a recent Claude Code; without it the rest still works. |
 
+## Using them
+
+Install, reload, and these work with no further steps. What you do with each:
+
+| Mod | How to use it |
+| --- | --- |
+| `git-guard` | Work as normal. When the model tries a `git push` you did not ask for, it is blocked and told why. Say "push" in your prompt, or press **Allow push** in the **GitHub** panel (`/gh` reopens it), to let one through. Press **Switch** on an account card to change the `gh` account. |
+| `db-pin` | Once per repo and branch, run `/dbpin <project-ref> [label]`. After that, Supabase MCP writes aimed at any other project are blocked, and a band shows the pin and the last migration. `/dbpin off` removes it. |
+| `deploy-diff` | Commit as normal. A card under the commit row lists what to deploy or run by hand. Add your own notes with the `rules` setting. |
+| `phase-stepper` | When a turn ends saying a phase or batch is done, the next prompt is suggested in the empty box. Press Tab to take it, or type your own. |
+| `downloads-lookup` | Mention your Downloads folder and a file name in a prompt ("look at the Q3 report in my downloads"). The matching paths are attached, so the model does not go searching. |
+| `model-router` | Nothing to do. Subagents are routed on their own and a toast names the choice. `/route` lists recent choices. If the band says your last prompt wanted another model, switch with `/model`. |
+| `dashboard` | Press the **Dashboard** button, or type `/dash`. **Hide dashboard** closes it. |
+| `cosmos-terminal`, `cyberpunk-vscode`, `anime-desktop` | Each has an on/off button above the prompt. `cyberpunk-vscode` adds `/netrun`, `anime-desktop` adds `/dojo` and `/anime`. |
+
 ## Status
 
 Honest notes on how far each has been checked.
@@ -65,10 +80,10 @@ These are general versions. Installing is enough for all of them, and the ones t
 
 | Mod | Settings |
 | --- | --- |
-| `git-guard` | `accountOrder` (logins to list first), `pushWords` (extra words that ask for a push), `noPushWords` (extra phrases that cancel one) |
+| `git-guard` | `accountOrder` (logins to list first), `commitIdentity` (on: switching account also sets this repo's commit name and email to it; off by default), `pushWords` (extra words that ask for a push), `noPushWords` (extra phrases that cancel one) |
 | `phase-stepper` | `doneWords` (extra words that mark a phase finished), `stageWords` (extra words that name a phase, such as `fase`) |
 | `downloads-lookup` | `folder` (your Downloads folder if it is not `~/Downloads`; `XDG_DOWNLOAD_DIR` is also read), `triggerWords` (extra words that mean Downloads) |
-| `deploy-diff` | `rules` (your own notes: `path-prefix => note`, separated by `;`) |
+| `deploy-diff` | `rules` (your own notes: `path fragment => note`, separated by `;`) |
 | `db-pin` | `migrationCommand` (text that marks your migration script) |
 | `model-router` | `heavyWords`, `lightWords`, `mediumWords`, `riskyWords` |
 | `anime-desktop` | `backdropImage`, `scene` |
@@ -77,7 +92,7 @@ These are general versions. Installing is enough for all of them, and the ones t
 
 1. Install `git` and the [GitHub CLI](https://cli.github.com/), then sign in: `gh auth login`.
 2. For more than one account, run `gh auth login` once per account. The GitHub panel lists every account `gh` knows, in `gh`'s own order. Check with `gh auth status`.
-3. Picking an account runs `gh auth switch`, which changes the account for the whole machine, not just that session. It does not change your commit name or email. Set those yourself per repo if you need to: `git config user.email "<id>+<login>@users.noreply.github.com"`.
+3. Picking an account runs `gh auth switch`, which changes the account for the whole machine, not just that session. By default it does not change your commit name or email. Turn on the `commitIdentity` setting and it also sets them for that repo (`git config --local`) to the account's name and GitHub noreply address, so commits and pushes match. Or set them yourself: `git config user.email "<id>+<login>@users.noreply.github.com"`.
 4. A push is blocked unless your prompt says "push" (or you press **Allow push** in the panel). A repo remembers the last account you picked there and blocks pushes from a different one.
 5. To put your own accounts first, set `accountOrder` to their logins, for example `work-login, home-login`.
 
@@ -87,7 +102,7 @@ Run `/dbpin <project-ref> [label]` once on each branch you want locked. A projec
 
 ### deploy-diff
 
-It recognises Firebase (a `firebase.json` in the repo) and Supabase (a `supabase` folder). For another stack, use the `rules` setting: `infra/ => terraform apply; charts/ => helm upgrade` adds that note to the card whenever a commit changes a path starting with the prefix. Rules work with or without Firebase and Supabase.
+It recognises Firebase (a `firebase.json` in the repo) and Supabase (a `supabase` folder). For another stack, use the `rules` setting: `infra/ => terraform apply; charts/ => helm upgrade` adds that note to the card whenever a commit changes a path containing that text. Rules work with or without Firebase and Supabase.
 
 ### anime-desktop: your own backdrop image
 

@@ -1,6 +1,6 @@
 {
   "name": "git-guard",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Blocks git push unless the prompt asked for it, switches GitHub accounts from a dropdown, and shows branch state in the status line.",
   "types": "./types/index.d.ts",
   "userConfig": {
@@ -21,6 +21,12 @@
       "title": "Extra do-not-push phrases",
       "description": "Comma-separated phrases, in any language, that cancel a push request in the same prompt. Example: no empujes, 不要推送.",
       "default": ""
+    },
+    "commitIdentity": {
+      "type": "boolean",
+      "title": "Commit as the account you switch to",
+      "description": "When you switch account in the panel, also set this repo's git user.name and user.email to that account (GitHub noreply address). Off by default.",
+      "default": false
     }
   }
 }

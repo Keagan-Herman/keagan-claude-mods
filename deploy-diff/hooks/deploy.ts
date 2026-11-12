@@ -21,8 +21,8 @@ const FIREBASE: [RegExp, string][] = [
   [/^storage\.rules$/, 'storage'],
 ]
 
-// Rules from the `rules` setting: "path-prefix => note", split by ; or new lines. A changed path
-// that starts with the prefix adds the note to the card, whatever the stack.
+// Rules from the `rules` setting: "path fragment => note", split by ; or new lines. A changed path
+// that contains the fragment adds the note to the card, whatever the stack.
 export type Rule = [string, string]
 
 export const parseRules = (text: unknown): Rule[] =>
@@ -67,7 +67,7 @@ export const advise = (changes: Change[], stack: Stack, rules: Rule[] = []): str
   }
 
   for (const [prefix, note] of rules) {
-    if (paths.some(p => p.startsWith(prefix))) {
+    if (paths.some(p => p.includes(prefix))) {
       lines.push(note)
     }
   }

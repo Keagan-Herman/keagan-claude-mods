@@ -7,6 +7,7 @@ import type { PushWords } from './git'
 // Set from the mod's settings when it loads.
 let accountOrder: string[] = []
 let pushWords: PushWords = {}
+let commitIdentity = false
 
 const git = atom({ plugin: 'git-guard', key: 'git' } as const, null)
 const accounts = atom({ plugin: 'git-guard', key: 'accounts' } as const, [])
@@ -81,6 +82,17 @@ const switchTo = async ($: EngineInterface, login: string) => {
   const g = await read($, git)
 
   if (g) {
+    // The commitIdentity setting: commits in this repo follow the account too, with GitHub's own noreply address for it.
+    if (commitIdentity) {
+      const me = await run($, ['gh', 'api', 'user', '-q', '[.id,.name]|@tsv'])
+      const [id, name] = (me?.stdout ?? '').trim().split('\t')
+
+      if (id) {
+        await run($, ['git', 'config', '--local', 'user.name', name || login])
+        await run($, ['git', 'config', '--local', 'user.email', `${id}+${login}@users.noreply.github.com`])
+      }
+    }
+
     await $.store.set('repoAccount', { ...(await repoAccounts($)), [g.root]: login })
   }
 
@@ -93,6 +105,7 @@ export const register: Register = (on, options) => {
     .split(',')
     .map(s => s.trim().toLowerCase())
     .filter(Boolean)
+  commitIdentity = options.commitIdentity === true || options.commitIdentity === 'true'
   pushWords = { push: wordsOf(options.pushWords), no: wordsOf(options.noPushWords, 'giu') }
 
   on('session.start', async ($, e, next) => {

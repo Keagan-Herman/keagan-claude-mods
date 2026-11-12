@@ -1,13 +1,13 @@
 {
   "name": "deploy-diff",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "After a git commit, shows a card under the commit row listing what needs deploying, which migrations to apply and which new scripts to run.",
   "types": "./types/index.d.ts",
   "userConfig": {
     "rules": {
       "type": "string",
       "title": "Your own deploy rules",
-      "description": "Rules as \"path-prefix => note\", separated by ; or new lines. A commit that changes a path starting with the prefix adds the note to the card. Example: infra/ => terraform apply; charts/ => helm upgrade.",
+      "description": "Rules as \"path fragment => note\", separated by ; or new lines. A commit that changes a path containing the fragment adds the note to the card. Example: infra/ => terraform apply; charts/ => helm upgrade.",
       "default": ""
     }
   }
