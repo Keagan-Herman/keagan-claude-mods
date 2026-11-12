@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { gitVerb, parseAccounts, parseStatus, wantsPush } from './git'
+import { gitVerb, parseAccounts, parseStatus, wantsPush, wordsOf } from './git'
 
 test('only a real git push counts as a push', () => {
   expect(gitVerb('git push origin main', 'push')).toBe(true)
@@ -38,4 +38,20 @@ test('status counts, and accounts keep gh order', () => {
     },
   })
   expect(parseAccounts(json).map(a => a.login)).toEqual(['alice', 'work-alice'])
+})
+
+test('settings add push words and an account order, in any language', () => {
+  const x = { push: wordsOf('empuja, 推送'), no: wordsOf('no empujes, 不要推送', 'giu') }
+
+  expect(wantsPush('empuja los cambios', x)).toBe(true)
+  expect(wantsPush('请推送到远程', x)).toBe(true)
+  expect(wantsPush('no empujes todavia', x)).toBe(false)
+  expect(wantsPush('不要推送', x)).toBe(false)
+  expect(wantsPush('push it', x)).toBe(true)
+  expect(wantsPush('empuja los cambios')).toBe(false)
+
+  const json = JSON.stringify({ hosts: { 'github.com': [{ login: 'a', active: true }, { login: 'B', active: false }, { login: 'c', active: false }] } })
+
+  expect(parseAccounts(json).map(a => a.login)).toEqual(['a', 'B', 'c'])
+  expect(parseAccounts(json, ['b', 'c']).map(a => a.login)).toEqual(['B', 'c', 'a'])
 })

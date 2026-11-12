@@ -28,19 +28,39 @@ export const tierOf = (model: string): Tier | undefined => {
   return m.includes('haiku') ? 'haiku' : m.includes('sonnet') ? 'sonnet' : m.includes('opus') ? 'opus' : undefined
 }
 
+// A comma-separated setting as one pattern, in any language. Matched anywhere in the text, so
+// languages written without spaces work too. Null when the setting is empty.
+export const wordsOf = (list: unknown): RegExp | null => {
+  const words = String(list ?? '')
+    .split(',')
+    .map(w => w.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .filter(Boolean)
+
+  return words.length > 0 ? new RegExp(words.join('|'), 'iu') : null
+}
+
+// Words added in settings, beside the built-in English lists.
+export type Extra = { heavy?: RegExp | null; light?: RegExp | null; medium?: RegExp | null; risky?: RegExp | null }
+
+const hit = (re: RegExp, extra: RegExp | null | undefined, text: string) =>
+  (re.exec(text) ?? extra?.exec(text))?.[0].toLowerCase()
+
 // Rules only, so no tokens. `sure` is false when no rule had a view; the caller may then ask a model.
-export const judge = (text: string, subagentType?: string): Verdict => {
+export const judge = (text: string, subagentType?: string, x: Extra = {}): Verdict => {
   let v: Verdict
+  const heavy = hit(HEAVY, x.heavy, text)
+  const light = hit(LIGHT, x.light, text)
+  const medium = hit(MEDIUM, x.medium, text)
 
   if (subagentType === 'Plan') {
     v = { tier: 'opus', reason: 'planning agent', sure: true }
   } else if (subagentType === 'Explore') {
     v = { tier: 'haiku', reason: 'search agent', sure: true }
-  } else if (HEAVY.test(text)) {
-    v = { tier: 'opus', reason: `heavy work: ${HEAVY.exec(text)?.[0].toLowerCase() ?? ''}`, sure: true }
-  } else if (LIGHT.test(text) && !MEDIUM.test(text)) {
-    v = { tier: 'haiku', reason: `light work: ${LIGHT.exec(text)?.[0].toLowerCase() ?? ''}`, sure: true }
-  } else if (MEDIUM.test(text) || LIGHT.test(text)) {
+  } else if (heavy) {
+    v = { tier: 'opus', reason: `heavy work: ${heavy}`, sure: true }
+  } else if (light && !medium) {
+    v = { tier: 'haiku', reason: `light work: ${light}`, sure: true }
+  } else if (medium || light) {
     v = { tier: 'sonnet', reason: 'ordinary work', sure: true }
   } else {
     v = { tier: 'sonnet', reason: 'no clear signal', sure: false }
@@ -51,7 +71,7 @@ export const judge = (text: string, subagentType?: string): Verdict => {
     v = { tier: 'sonnet', reason: 'long task', sure: true }
   }
 
-  if (v.tier === 'haiku' && RISKY.test(text)) {
+  if (v.tier === 'haiku' && hit(RISKY, x.risky, text)) {
     v = { tier: 'sonnet', reason: 'touches a database, deploy or push', sure: true }
   }
 

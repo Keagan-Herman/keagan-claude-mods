@@ -1,10 +1,12 @@
 import type { Register } from 'claude-code'
 
-import { asksForDownloads, pickDownloads } from './dl'
+import { asksForDownloads, downloadsDir, pickDownloads, wordsOf } from './dl'
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  const trigger = wordsOf(options.triggerWords)
+
   on('prompt.submit', async ($, e, next) => {
-    if (e.isMeta || e.command || !asksForDownloads(e.text)) {
+    if (e.isMeta || e.command || !asksForDownloads(e.text, trigger)) {
       return next(e)
     }
 
@@ -15,8 +17,16 @@ export const register: Register = on => {
     }
 
     const sep = home.includes('\\') ? '\\' : '/'
-    const dir = `${home}${sep}Downloads`
-    const hits = pickDownloads(e.text, await $.fs.list(dir))
+    const dir = downloadsDir(String(options.folder ?? ''), await $.env.get('XDG_DOWNLOAD_DIR'), home)
+    const entries = await $.fs.list(dir).catch(() => null)
+
+    if (!entries) {
+      $.ui.toast(`Downloads: no folder at ${dir}. Set the folder option to where yours is.`)
+
+      return next(e)
+    }
+
+    const hits = pickDownloads(e.text, entries)
 
     if (hits.length === 0) {
       $.ui.toast('Downloads: no file name matched this prompt')

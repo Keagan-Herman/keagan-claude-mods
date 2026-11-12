@@ -1,7 +1,8 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { advise, parseChanges } from './deploy'
+import { advise, parseChanges, parseRules } from './deploy'
+import type { Rule } from './deploy'
 
 const cards = atom({ plugin: 'deploy-diff', key: 'cards' } as const, {})
 
@@ -14,7 +15,7 @@ const exists = async ($: EngineInterface, path: string) =>
     () => false,
   )
 
-const card = async ($: EngineInterface): Promise<string[]> => {
+const card = async ($: EngineInterface, rules: Rule[]): Promise<string[]> => {
   try {
     const shown = await $.process.run(['git', 'show', '--name-status', '--pretty=format:', 'HEAD'], {
       timeoutMs: 10000,
@@ -26,18 +27,20 @@ const card = async ($: EngineInterface): Promise<string[]> => {
 
     const [firebase, supabase] = await Promise.all([exists($, 'firebase.json'), exists($, 'supabase')])
 
-    return advise(parseChanges(shown.stdout), { firebase, supabase })
+    return advise(parseChanges(shown.stdout), { firebase, supabase }, rules)
   } catch {
     return []
   }
 }
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  const rules = parseRules(options.rules)
+
   on('tool.call', { tool: ['Bash', 'PowerShell'] }, async ($, e, next) => {
     const ran = await next(e)
 
     if (isCommit(e.command) && ran.deny === undefined && ran.isError !== true) {
-      const lines = await card($)
+      const lines = await card($, rules)
 
       if (lines.length > 0) {
         // The newest 30 commits keep their card; older rows go back to plain.

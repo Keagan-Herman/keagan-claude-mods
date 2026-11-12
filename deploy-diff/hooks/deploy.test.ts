@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { advise, parseChanges } from './deploy'
+import { advise, parseChanges, parseRules } from './deploy'
 
 const firebase = { firebase: true, supabase: false }
 
@@ -21,4 +21,12 @@ test('migrations are listed only for a Supabase repo, and nothing means no card'
     'Apply by hand (a deploy will not): 0108_x.sql',
   ])
   expect(advise(changes, firebase)).toEqual([])
+})
+
+test('rules from settings add a note for changed paths, whatever the stack', () => {
+  const rules = parseRules('migrations/ => run the migrations; infra/ => terraform apply')
+
+  expect(rules).toEqual([['migrations/', 'run the migrations'], ['infra/', 'terraform apply']])
+  expect(parseRules('broken rule;;')).toEqual([])
+  expect(advise(parseChanges('M\tinfra/main.tf\n'), { firebase: false, supabase: false }, rules)).toEqual(['terraform apply'])
 })

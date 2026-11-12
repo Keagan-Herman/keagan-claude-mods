@@ -1,8 +1,8 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { MISS_LIMIT, fromLabel, judge, tierOf } from './route'
-import type { Tier } from './route'
+import { MISS_LIMIT, fromLabel, judge, tierOf, wordsOf } from './route'
+import type { Extra, Tier } from './route'
 
 const advice = atom({ plugin: 'model-router', key: 'advice' } as const, null)
 const current = atom({ plugin: 'model-router', key: 'current' } as const, '')
@@ -22,7 +22,15 @@ const note = async ($: EngineInterface, entry: Entry) => {
 }
 
 // Rules cost nothing. Only a verdict the rules could not give goes to one small Haiku call.
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  // Words from settings, added to the built-in English lists (any language).
+  const extra: Extra = {
+    heavy: wordsOf(options.heavyWords),
+    light: wordsOf(options.lightWords),
+    medium: wordsOf(options.mediumWords),
+    risky: wordsOf(options.riskyWords),
+  }
+
   // agent id -> what it was routed to, and how many of its tool calls failed. Lost on reload, which only forgets one run.
   // ponytail: an agent that never fails stays in `routed` for the session; fine at a few dozen agents, drop on agent end if that grows.
   const routed = new Map<string, { type: string; tier: Tier }>()
@@ -56,7 +64,7 @@ export const register: Register = on => {
     }
 
     const text = `${e.description}\n${e.prompt}`
-    const v = judge(text, e.subagentType)
+    const v = judge(text, e.subagentType, extra)
     let tier = v.tier
     let reason = v.reason
 
@@ -118,7 +126,7 @@ export const register: Register = on => {
   // Your own prompts: a verdict on the one you just sent, shown above the prompt. It cannot change the model.
   on('prompt.submit', async ($, e, next) => {
     if (!e.command && !e.isMeta && e.text.trim().length > 0) {
-      const v = judge(e.text)
+      const v = judge(e.text, undefined, extra)
 
       await update($, advice, () => (v.sure ? { tier: v.tier, reason: v.reason } : null))
       const model = await $.session.model()

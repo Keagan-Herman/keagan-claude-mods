@@ -1,7 +1,12 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { badge, gitVerb, hueOf, parseAccounts, parseStatus, statusText, wantsPush } from './git'
+import { badge, gitVerb, hueOf, parseAccounts, parseStatus, statusText, wantsPush, wordsOf } from './git'
+import type { PushWords } from './git'
+
+// Set from the mod's settings when it loads.
+let accountOrder: string[] = []
+let pushWords: PushWords = {}
 
 const git = atom({ plugin: 'git-guard', key: 'git' } as const, null)
 const accounts = atom({ plugin: 'git-guard', key: 'accounts' } as const, [])
@@ -44,7 +49,7 @@ const refreshGit = async ($: EngineInterface) => {
 const refreshAccounts = async ($: EngineInterface) => {
   const out = await run($, ['gh', 'auth', 'status', '--json', 'hosts'])
 
-  await update($, accounts, () => (out ? parseAccounts(out.stdout) : []))
+  await update($, accounts, () => (out ? parseAccounts(out.stdout, accountOrder) : []))
 }
 
 const showStatus = async ($: EngineInterface) => {
@@ -83,7 +88,13 @@ const switchTo = async ($: EngineInterface, login: string) => {
   $.ui.toast(`git-guard: now ${login}`)
 }
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  accountOrder = String(options.accountOrder ?? '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean)
+  pushWords = { push: wordsOf(options.pushWords), no: wordsOf(options.noPushWords, 'giu') }
+
   on('session.start', async ($, e, next) => {
     await refreshAll($)
     await $.command.register({ name: 'gh', description: 'Open the GitHub panel: switch account, allow a push' })
@@ -107,7 +118,7 @@ export const register: Register = on => {
   // The prompt decides whether a push is allowed this turn.
   on('prompt.submit', async ($, e, next) => {
     if (!e.isMeta && !e.command) {
-      await update($, isPushOk, () => wantsPush(e.text))
+      await update($, isPushOk, () => wantsPush(e.text, pushWords))
       await showStatus($)
     }
 

@@ -8,9 +8,34 @@ const STOP = new Set(
   ),
 )
 
-const norm = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+// A comma-separated setting as one pattern, in any language. Matched anywhere in the text, so
+// languages written without spaces work too. Null when the setting is empty.
+export const wordsOf = (list: unknown, flags = 'iu'): RegExp | null => {
+  const words = String(list ?? '')
+    .split(',')
+    .map(w => w.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .filter(Boolean)
 
-export const asksForDownloads = (text: string): boolean => /\bdownloads?\b/i.test(text)
+  return words.length > 0 ? new RegExp(words.join('|'), flags) : null
+}
+
+// Letters and digits of any script, so names in Greek, Cyrillic or Chinese match too.
+const norm = (s: string): string => s.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
+
+// Where Downloads is: the folder setting (a leading ~ means home), else XDG_DOWNLOAD_DIR, else ~/Downloads.
+export const downloadsDir = (folder: string, xdg: string | undefined, home: string): string => {
+  const sep = home.includes('/') ? '/' : String.fromCharCode(92)
+  const set = folder.trim()
+
+  if (set) {
+    return set === '~' || set.startsWith('~/') || set.startsWith('~' + sep) ? home + set.slice(1) : set
+  }
+
+  return xdg?.trim() || `${home}${sep}Downloads`
+}
+
+export const asksForDownloads = (text: string, extra?: RegExp | null): boolean =>
+  /\bdownloads?\b/i.test(text) || (extra?.test(text) ?? false)
 
 // ponytail: a name-overlap score, not a search index. Words of the prompt's head
 // that sit inside a file's name; best score first, newest first among equals.
@@ -20,7 +45,7 @@ export const pickDownloads = (text: string, entries: Entry[], limit = 5): Entry[
       text
         .slice(0, 300)
         .toLowerCase()
-        .split(/[^a-z0-9]+/)
+        .split(/[^\p{L}\p{N}]+/u)
         .filter(w => w.length >= 2 && !STOP.has(w)),
     ),
   ]

@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { isDbWrite, isRef, parseApplied, pinKey } from './pin'
+import { isDbWrite, isMigrationRun, isRef, parseApplied, pinKey } from './pin'
 
 test('writes are told from reads', () => {
   const sql = 'mcp__claude_ai_Supabase__execute_sql'
@@ -17,4 +17,10 @@ test('refs, keys and migration output', () => {
   expect(parseApplied('applied 0108_add_x')).toBe('0108_add_x')
   expect(parseApplied('already applied: 0108')).toBe('0108')
   expect(parseApplied('FAIL file: boom')).toBe(undefined)
+})
+
+test('the migration script name is a setting', () => {
+  expect(isMigrationRun('node scripts/apply-migration.mjs 0108', '')).toBe(true)
+  expect(isMigrationRun('pnpm db:migrate', 'db:migrate')).toBe(true)
+  expect(isMigrationRun('pnpm db:migrate', '')).toBe(false)
 })

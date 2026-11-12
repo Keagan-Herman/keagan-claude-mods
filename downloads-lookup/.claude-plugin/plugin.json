@@ -1,5 +1,19 @@
 {
   "name": "downloads-lookup",
-  "version": "0.1.0",
-  "description": "When a prompt mentions the Downloads folder, finds the files and folders there whose names match the prompt and hands Claude their paths, so it does not have to search."
+  "version": "0.2.0",
+  "description": "When a prompt mentions the Downloads folder, finds the files and folders there whose names match the prompt and hands Claude their paths, so it does not have to search.",
+  "userConfig": {
+    "folder": {
+      "type": "string",
+      "title": "Downloads folder",
+      "description": "Absolute path of your Downloads folder, if it is not ~/Downloads. A leading ~ means your home folder.",
+      "default": ""
+    },
+    "triggerWords": {
+      "type": "string",
+      "title": "Extra trigger words",
+      "description": "Comma-separated words, in any language, that make a prompt count as mentioning Downloads (added to \"downloads\"). Example: descargas.",
+      "default": ""
+    }
+  }
 }

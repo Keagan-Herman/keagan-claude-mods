@@ -21,8 +21,19 @@ const FIREBASE: [RegExp, string][] = [
   [/^storage\.rules$/, 'storage'],
 ]
 
-// ponytail: path rules for the stacks in use (Firebase, Supabase). A new stack is one more row.
-export const advise = (changes: Change[], stack: Stack): string[] => {
+// Rules from the `rules` setting: "path-prefix => note", split by ; or new lines. A changed path
+// that starts with the prefix adds the note to the card, whatever the stack.
+export type Rule = [string, string]
+
+export const parseRules = (text: unknown): Rule[] =>
+  String(text ?? '')
+    .split(/[;\n]+/)
+    .map(r => r.split('=>'))
+    .filter(r => r.length === 2 && r[0]!.trim() && r[1]!.trim())
+    .map(r => [r[0]!.trim(), r[1]!.trim()] as Rule)
+
+// ponytail: path rules for Firebase and Supabase, plus the person's own rules. Another stack is a setting.
+export const advise = (changes: Change[], stack: Stack, rules: Rule[] = []): string[] => {
   const lines: string[] = []
   const paths = changes.map(c => c.path)
   const added = (re: RegExp) => changes.filter(c => c.status === 'A' && re.test(c.path)).map(c => c.path)
@@ -53,6 +64,12 @@ export const advise = (changes: Change[], stack: Stack): string[] => {
 
   for (const script of added(/^scripts\/[^/]+\.(?:ts|mjs|js|sql)$/)) {
     lines.push(`New script, run by hand: ${script}`)
+  }
+
+  for (const [prefix, note] of rules) {
+    if (paths.some(p => p.startsWith(prefix))) {
+      lines.push(note)
+    }
   }
 
   return lines

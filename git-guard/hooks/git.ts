@@ -13,13 +13,33 @@ export const gitVerb = (command: string, verb: string): boolean => {
   return bare.split(/[;&|\n]+/).some(part => re.test(part))
 }
 
+// A comma-separated setting as one pattern, in any language. Matched anywhere in the text, so
+// languages written without spaces work too. Null when the setting is empty.
+export const wordsOf = (list: unknown, flags = 'iu'): RegExp | null => {
+  const words = String(list ?? '')
+    .split(',')
+    .map(w => w.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .filter(Boolean)
+
+  return words.length > 0 ? new RegExp(words.join('|'), flags) : null
+}
+
 const NEGATED = /\b(?:don.?t|do not|never|not|no|without)\s+(?:\w+\s+)?(?:push|sync)\w*/gi
 
 // Did the person ask for a push? Only the head of the prompt counts (a paste
 // below it may say anything), and a compaction summary never asks.
-export const wantsPush = (text: string): boolean =>
-  !text.startsWith('This session is being continued') &&
-  /\bpush(?:ed|ing)?\b/i.test(text.slice(0, 400).replace(NEGATED, ''))
+// Words from settings, added to the English ones: `push` counts as a request, `no` cancels one.
+export type PushWords = { push?: RegExp | null; no?: RegExp | null }
+
+export const wantsPush = (text: string, x: PushWords = {}): boolean => {
+  if (text.startsWith('This session is being continued')) {
+    return false
+  }
+
+  const head = text.slice(0, 400).replace(NEGATED, '').replace(x.no ?? /(?!)/g, '')
+
+  return /\bpush(?:ed|ing)?\b/i.test(head) || (x.push?.test(head) ?? false)
+}
 
 export const parseStatus = (
   out: string,
@@ -48,14 +68,21 @@ export const parseStatus = (
   return { branch, ahead, behind, hasUpstream, dirty }
 }
 
-// Reads `gh auth status --json hosts`: the logins on github.com, in gh's own order.
-export const parseAccounts = (json: string): GitGuardAccount[] => {
+// Reads `gh auth status --json hosts`: the logins on github.com, in gh's own order
+// unless the accountOrder setting names some first (lower case, in that order).
+export const parseAccounts = (json: string, order: string[] = []): GitGuardAccount[] => {
   try {
     const hosts = JSON.parse(json).hosts['github.com'] as {
       login: string
       active: boolean
     }[]
-    return hosts.map(h => ({ login: h.login, isActive: h.active }))
+    const rank = (login: string) => {
+      const i = order.indexOf(login.toLowerCase())
+
+      return i < 0 ? order.length : i
+    }
+
+    return hosts.map(h => ({ login: h.login, isActive: h.active })).sort((a, b) => rank(a.login) - rank(b.login))
   } catch {
     return []
   }

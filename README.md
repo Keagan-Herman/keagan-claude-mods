@@ -51,16 +51,27 @@ Each restyles one surface and passes everything else straight through, so instal
 
 Honest notes on how far each has been checked.
 
-- Every mod has tests, type-checks and validates. The tests check that what a mod draws is valid on each surface. They cannot show how it looks.
-- **Not yet seen on a real screen:** the `git-guard` GitHub panel (including whether the VS Code extension docks it beside the chat or above the prompt) and the three look-and-feel mods. Colours, spacing, the animation's smoothness and whether the VS Code extension can dock the `/netrun` panel are all unconfirmed.
-- **`anime-desktop`'s backdrop is untested.** The Claude Code command-line tool used to validate and test mods (2.1.314) predates the backdrop API, so it could not check it. If the backdrop does not appear, update Claude Code first. The rest of the mod does not depend on it.
-- `dashboard` has not been seen on a real screen either. Its rate-limit rows appear only where the engine reports them (subscription accounts), and its cost figure only where the host keeps a ledger.
-- `model-router` has tests and validates, but has not run in a real session. The word lists that decide light, ordinary and heavy are a first guess: run `/route` after some use and adjust `hooks/route.ts` where it misjudged. It cannot change the model of your own turns, only advise. The miss counter counts each Haiku agent at most once (any failed tool call in it counts), and two misses move that agent type to Sonnet for good; that is tested, but not yet seen in a real session.
+- Every mod has tests, type-checks and validates, and all of them have been tried on a real screen. The tests check that what a mod draws is valid on each surface. They cannot show how it looks.
+- Tested on Claude Code 2.1.322 on Windows 11. Other versions and systems are untested. The plugin API is early-access, so a newer release may change things. A feature the host does not offer (for example the desktop backdrop, or a panel a surface cannot place) is skipped and the rest of the mod still works.
+- `dashboard`: its rate-limit rows appear only where the engine reports them (subscription accounts), and its cost figure only where the host keeps a ledger.
+- `model-router`: the word lists that decide light, ordinary and heavy are a first guess. Run `/route` after some use and add your own words in the mod's settings where it misjudged. It cannot change the model of your own turns, only advise. The miss counter counts each Haiku agent at most once (any failed tool call in it counts), and two misses move that agent type to Sonnet for good.
+- Language: the built-in keywords are English. `git-guard`, `phase-stepper`, `downloads-lookup` and `model-router` take extra words in any language in their settings. `downloads-lookup` matches file names in any script, but splits the prompt on spaces, so Chinese, Japanese and Korean prompts match only whole-word runs.
+- Updates: each mod's version is raised when it changes, so an installed copy picks the change up with `claude plugin update <mod>`. A copy you loaded from a folder (`CLAUDE_CODE_PLUGIN_DIRS` or `--plugin-dir`) is the files in that folder, so copy the new files over it.
 - Token use: the look-and-feel mods, `dashboard`, `deploy-diff` and `phase-stepper` draw on screen only and add no tokens. The dashboard reads events and local data the engine already produces. `downloads-lookup` adds a few lines of file paths to a prompt that mentions Downloads, and a blocked push or database call sends the model one short message.
 
 ## After installing: setup and making them yours
 
-These are general versions. Installing is enough for `phase-stepper`, `downloads-lookup` and the three look-and-feel mods. The others need a little setup, and two have places meant to be edited.
+These are general versions. Installing is enough for all of them, and the ones that need an account or a project are noted below. Everything you might want to change is a setting, not a source edit: open the plugin's options in `/config` (or edit `pluginConfigs` in `settings.json`). List settings are comma-separated text.
+
+| Mod | Settings |
+| --- | --- |
+| `git-guard` | `accountOrder` (logins to list first), `pushWords` (extra words that ask for a push), `noPushWords` (extra phrases that cancel one) |
+| `phase-stepper` | `doneWords` (extra words that mark a phase finished), `stageWords` (extra words that name a phase, such as `fase`) |
+| `downloads-lookup` | `folder` (your Downloads folder if it is not `~/Downloads`; `XDG_DOWNLOAD_DIR` is also read), `triggerWords` (extra words that mean Downloads) |
+| `deploy-diff` | `rules` (your own notes: `path-prefix => note`, separated by `;`) |
+| `db-pin` | `migrationCommand` (text that marks your migration script) |
+| `model-router` | `heavyWords`, `lightWords`, `mediumWords`, `riskyWords` |
+| `anime-desktop` | `backdropImage`, `scene` |
 
 ### git-guard
 
@@ -68,15 +79,15 @@ These are general versions. Installing is enough for `phase-stepper`, `downloads
 2. For more than one account, run `gh auth login` once per account. The GitHub panel lists every account `gh` knows, in `gh`'s own order. Check with `gh auth status`.
 3. Picking an account runs `gh auth switch`, which changes the account for the whole machine, not just that session. It does not change your commit name or email. Set those yourself per repo if you need to: `git config user.email "<id>+<login>@users.noreply.github.com"`.
 4. A push is blocked unless your prompt says "push" (or you press **Allow push** in the panel). A repo remembers the last account you picked there and blocks pushes from a different one.
-5. To put your own accounts first, add a `PREFERRED` list to `git-guard/hooks/git.ts` and sort `parseAccounts` by it.
+5. To put your own accounts first, set `accountOrder` to their logins, for example `work-login, home-login`.
 
 ### db-pin
 
-Run `/dbpin <project-ref> [label]` once on each branch you want locked. A project ref is the 20 lowercase letters in your Supabase project URL. It guards writes made through the Supabase MCP server, so that server has to be connected. It does not guard scripts or the Supabase CLI.
+Run `/dbpin <project-ref> [label]` once on each branch you want locked. A project ref is the 20 lowercase letters in your Supabase project URL. It guards writes made through the Supabase MCP server, so that server has to be connected. It does not guard scripts or the Supabase CLI. It is for Supabase only, so it does nothing for other databases. If your migration script is not called `apply-migration`, set `migrationCommand` so its runs show in the band.
 
 ### deploy-diff
 
-It recognises Firebase (a `firebase.json` in the repo) and Supabase (a `supabase` folder). For another stack, add a row to the `FIREBASE` list or a branch in `advise()` in `deploy-diff/hooks/deploy.ts`, mapping changed paths to the command or note you want on the card. The test in `deploy.test.ts` shows the shape.
+It recognises Firebase (a `firebase.json` in the repo) and Supabase (a `supabase` folder). For another stack, use the `rules` setting: `infra/ => terraform apply; charts/ => helm upgrade` adds that note to the card whenever a commit changes a path starting with the prefix. Rules work with or without Firebase and Supabase.
 
 ### anime-desktop: your own backdrop image
 
@@ -84,7 +95,7 @@ In Claude Code settings, set the mod's `backdropImage` option to the absolute pa
 
 ### Editing a mod
 
-Copy the repo, change the files, then run `claude plugin validate <mod>` and `claude plugin test <mod>`. Load your copy without installing by starting a session with `claude --plugin-dir <path-to-mod>`.
+Copy the repo, change the files, then run `claude plugin validate <mod>` and `claude plugin test <mod>`. Load your copy without installing by starting a session with `claude --plugin-dir <path-to-mod>`. Each mod has a `tsconfig.json` for editor type checking; `claude plugin test <mod>` generates the `.claude-plugin/types/` folder it points at.
 
 ## Contributing
 

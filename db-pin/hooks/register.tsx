@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { bandText, isDbWrite, isRef, parseApplied, pinKey } from './pin'
+import { bandText, isDbWrite, isMigrationRun, isRef, parseApplied, pinKey } from './pin'
 
 const pinAtom = atom({ plugin: 'db-pin', key: 'pin' } as const, null)
 const lastAtom = atom({ plugin: 'db-pin', key: 'last' } as const, null)
@@ -48,7 +48,9 @@ const noteApplied = async ($: EngineInterface, ref: string, what: string) => {
 
 const toldAbout = new Set<string>()
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  const migrationScript = String(options.migrationCommand ?? '')
+
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'dbpin',
@@ -146,7 +148,7 @@ export const register: Register = on => {
   on('tool.call', { tool: ['Bash', 'PowerShell'] }, async ($, e, next) => {
     const ran = await next(e)
 
-    if (/apply-migration/.test(e.command) && ran.deny === undefined) {
+    if (isMigrationRun(e.command, migrationScript) && ran.deny === undefined) {
       const version = parseApplied(ran.text ?? '')
       const pin = await read($, pinAtom)
 

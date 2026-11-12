@@ -1,6 +1,14 @@
 {
   "name": "db-pin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Pins each repo and branch to one Supabase project, blocks writes aimed anywhere else, and shows the pin and the last migration applied.",
-  "types": "./types/index.d.ts"
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "migrationCommand": {
+      "type": "string",
+      "title": "Migration script name",
+      "description": "Text in the command that marks your migration script, so a run of it is recorded in the band. Default: apply-migration.",
+      "default": ""
+    }
+  }
 }

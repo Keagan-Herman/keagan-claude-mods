@@ -1,6 +1,26 @@
 {
   "name": "git-guard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Blocks git push unless the prompt asked for it, switches GitHub accounts from a dropdown, and shows branch state in the status line.",
-  "types": "./types/index.d.ts"
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "accountOrder": {
+      "type": "string",
+      "title": "Account order",
+      "description": "Comma-separated GitHub logins to list first in the panel, in this order. Others follow in gh order.",
+      "default": ""
+    },
+    "pushWords": {
+      "type": "string",
+      "title": "Extra push words",
+      "description": "Comma-separated words, in any language, that count as asking for a push (added to \"push\"). Example: empuja, 推送.",
+      "default": ""
+    },
+    "noPushWords": {
+      "type": "string",
+      "title": "Extra do-not-push phrases",
+      "description": "Comma-separated phrases, in any language, that cancel a push request in the same prompt. Example: no empujes, 不要推送.",
+      "default": ""
+    }
+  }
 }

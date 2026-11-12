@@ -31,6 +31,9 @@ export const isDbWrite = (tool: string, query: unknown): boolean => {
   return WRITE_TOOLS.has(name) || (name === 'execute_sql' && SQL_WRITE.test(String(query ?? '')))
 }
 
+// Is this command the person's migration script? The name is a setting; the default is apply-migration.
+export const isMigrationRun = (command: string, name: string): boolean => command.includes(name.trim() || 'apply-migration')
+
 // apply-migration.mjs prints "applied 0108_x" or "already applied: 0108".
 export const parseApplied = (output: string): string | undefined =>
   /(?:already applied:?|applied)\s+(\d{4}(?:_\S+)?)/.exec(output)?.[1]

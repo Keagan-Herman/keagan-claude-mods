@@ -1,6 +1,19 @@
 import { expect, test } from 'claude-code/testing'
 
-import { fromLabel, judge, tierOf } from './route'
+import { fromLabel, judge, tierOf, wordsOf } from './route'
+
+test('words from settings are added to the built-in lists, in any language', () => {
+  const x = { heavy: wordsOf('investigar, 设计'), light: wordsOf('buscar'), risky: wordsOf('produccion') }
+
+  expect(wordsOf('')).toBeNull()
+  expect(wordsOf(' , ')).toBeNull()
+  expect(judge('hay que investigar el fallo', undefined, x).tier).toBe('opus')
+  expect(judge('重新设计登录页', undefined, x).tier).toBe('opus')
+  expect(judge('buscar el archivo', undefined, x).tier).toBe('haiku')
+  expect(judge('buscar la config de produccion', undefined, x).tier).toBe('sonnet')
+  expect(judge('buscar el archivo').sure).toBe(false)
+  expect(wordsOf('a.b')?.test('axb')).toBe(false)
+})
 
 test('light, ordinary and heavy work land on the model the table says', () => {
   expect(judge('find where the login form is defined').tier).toBe('haiku')

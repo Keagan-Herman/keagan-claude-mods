@@ -1,5 +1,19 @@
 {
   "name": "phase-stepper",
-  "version": "0.1.0",
-  "description": "After a turn that finishes a phase or batch, suggests the next prompt in the empty prompt box (Tab to take it), with the local commit step when files are uncommitted."
+  "version": "0.2.0",
+  "description": "After a turn that finishes a phase or batch, suggests the next prompt in the empty prompt box (Tab to take it), with the local commit step when files are uncommitted.",
+  "userConfig": {
+    "doneWords": {
+      "type": "string",
+      "title": "Extra done words",
+      "description": "Comma-separated words, in any language, that mark a phase as finished (added to done, complete, shipped and so on).",
+      "default": ""
+    },
+    "stageWords": {
+      "type": "string",
+      "title": "Extra phase words",
+      "description": "Comma-separated words, in any language, that name a phase or batch followed by a number (added to phase, batch, stage and so on). Example: fase, etapa.",
+      "default": ""
+    }
+  }
 }

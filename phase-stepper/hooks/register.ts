@@ -1,8 +1,10 @@
 import type { Register } from 'claude-code'
 
-import { nextPrompt } from './step'
+import { nextPrompt, wordsOf } from './step'
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  const words = { done: wordsOf(options.doneWords), stage: wordsOf(options.stageWords)?.source }
+
   // Lost on a reload, which only costs the suggestion of the turn in flight.
   let pending: string | undefined
 
@@ -19,7 +21,7 @@ export const register: Register = on => {
         // Not a repository: suggest without the commit step.
       }
 
-      pending = nextPrompt(e.answer, isDirty)
+      pending = nextPrompt(e.answer, isDirty, words)
 
       if (pending) {
         await $.prompt.suggest({ text: pending })
