@@ -119,3 +119,7 @@ Copy the repo, change the files, then run `claude plugin validate <mod>` and `cl
 ## Checks
 
 Each mod has a small test file. Run `claude plugin test <mod>` and `claude plugin validate <mod>` inside the folder.
+
+## Software factory
+
+A small `/factory` skill for working on this repo. `/factory <feature>` runs a job through spec-writer, builder, four parallel reviewers (security, ux, ui, code), then an approver that merges or escalates. Agents live in `.claude/agents/`, the orchestrator in `.claude/skills/factory/SKILL.md`, and state in `factory/` (`board.json`, `backlog.md`, one folder per job). Other commands: `/factory next`, `/factory approve <job-id>`, `/factory rework <job-id> <note>`. For the board, run `python3 -m http.server` inside `factory/` and open `dashboard.html`. A generic copy for every project: copy `.claude/agents/*.md` and `.claude/skills/factory/SKILL.md` into `~/.claude/agents/` and `~/.claude/skills/factory/`, and put `factory/dashboard.html` beside the skill. On first run in a project the skill creates `factory/` itself and reads that project for its language, tests and conventions (the copy in this repo is tuned to these mods). Not yet run end to end on a real job.

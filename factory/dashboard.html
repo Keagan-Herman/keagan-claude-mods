@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Software Factory</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--ink:#1c1c1a;--mute:#76766f;--line:#e4e4df;--pass:#2f9e5b;--chg:#d9822b;--pend:#c9c9c2;--human:#d23f4a}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--ink:#ecece8;--mute:#8d8d85;--line:#2e2e2b;--pend:#3a3a36}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,sans-serif}
+header{padding:20px 24px 8px;display:flex;justify-content:space-between;align-items:baseline}
+h1{font-size:18px;margin:0}
+#stamp{color:var(--mute);font-size:12px}
+.board{display:grid;grid-template-columns:repeat(6,minmax(170px,1fr));gap:12px;padding:12px 24px 24px;overflow-x:auto}
+.col h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:0 0 8px;font-weight:600}
+.col.needs-human h2{color:var(--human)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer}
+.card:hover{border-color:var(--mute)}
+.card.needs-human{border:2px solid var(--human);box-shadow:0 0 0 3px color-mix(in srgb,var(--human) 18%,transparent)}
+.id{font-weight:600;word-break:break-all}
+.branch{color:var(--mute);font-size:12px;margin-bottom:6px}
+.round{display:flex;gap:4px;align-items:center;margin-top:4px}
+.round small{color:var(--mute);width:18px;font-size:11px}
+.chip{flex:1;text-align:center;font-size:10px;padding:2px 0;border-radius:4px;background:var(--pend);color:var(--ink)}
+.chip.PASS{background:var(--pass);color:#fff}
+.chip.CHANGES{background:var(--chg);color:#fff}
+.empty{color:var(--mute);font-size:12px}
+dialog{width:min(760px,92vw);max-height:84vh;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);padding:0}
+dialog::backdrop{background:#0006}
+.dh{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.dh button{border:0;background:none;color:var(--ink);font-size:18px;cursor:pointer}
+#files{padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap}
+#files button{border:1px solid var(--line);background:none;color:var(--ink);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px}
+#files button.on{background:var(--ink);color:var(--card)}
+pre{margin:0;padding:12px 16px 16px;white-space:pre-wrap;overflow:auto;max-height:56vh;font:12.5px/1.5 ui-monospace,Consolas,monospace}
+</style>
+</head>
+<body>
+<header><h1>Software Factory</h1><span id="stamp"></span></header>
+<main class="board" id="board"></main>
+<dialog id="dlg"><div class="dh"><b id="dt"></b><button onclick="dlg.close()" aria-label="Close">&times;</button></div><div id="files"></div><pre id="body"></pre></dialog>
+<script>
+const STAGES=[["spec","Spec"],["build","Build"],["review","Review"],["approve","Approve"],["needs-human","Needs human"],["merged","Merged"]];
+const REV=["security","ux","ui","code"];
+const board=document.getElementById("board"),dlg=document.getElementById("dlg");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function chips(r){return REV.map(k=>{const v=(r||{})[k]||"pending";return `<span class="chip ${v}" title="${k}: ${v}">${k}</span>`}).join("")}
+function card(j){
+  const rows=(j.rounds||[]).map((r,i)=>`<div class="round"><small>R${i+1}</small>${chips(r)}</div>`).join("");
+  return `<div class="card ${j.stage}" onclick="openJob('${esc(j.id)}')"><div class="id">${esc(j.id)}</div><div class="branch">${esc(j.branch||"")}</div>${rows}</div>`;
+}
+function render(d){
+  const jobs=d.jobs||[];
+  board.innerHTML=STAGES.map(([s,t])=>{
+    const c=jobs.filter(j=>j.stage===s).map(card).join("")||'<div class="empty">none</div>';
+    return `<section class="col ${s}"><h2>${t}</h2>${c}</section>`;
+  }).join("");
+  document.getElementById("stamp").textContent="updated "+new Date().toLocaleTimeString();
+}
+async function poll(){
+  try{render(await (await fetch("board.json",{cache:"no-store"})).json())}catch(e){document.getElementById("stamp").textContent="board.json not found, serve from factory/"}
+}
+async function openJob(id){
+  const j=(await (await fetch("board.json",{cache:"no-store"})).json()).jobs.find(x=>x.id===id);
+  const base=`jobs/${id}/`;
+  const files=["spec.md","build.md"];
+  (j.rounds||[]).forEach((_,i)=>REV.forEach(k=>files.push(`round-${i+1}/review-${k}.md`)));
+  files.push("decision.md");
+  document.getElementById("dt").textContent=id;
+  const f=document.getElementById("files");f.innerHTML="";
+  files.forEach(p=>{const b=document.createElement("button");b.textContent=p;b.onclick=()=>show(base+p,b);f.appendChild(b)});
+  dlg.showModal();
+  f.firstChild.click();
+}
+async function show(url,btn){
+  document.querySelectorAll("#files button").forEach(b=>b.classList.toggle("on",b===btn));
+  const r=await fetch(url,{cache:"no-store"});
+  document.getElementById("body").textContent=r.ok?await r.text():"(not written yet)";
+}
+poll();setInterval(poll,2000);
+</script>
+</body>
+</html>
